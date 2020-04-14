@@ -24,7 +24,7 @@ bin/helloworld: targets/helloworld/*
 minimal: bin/minimal
 bin/minimal: targets/minimal/*
 	mkdir -p ./bin
-	cd targets/minimal && go build -o $(BUILD_DIR)/minimal
+	cd targets/minimal && go build -gcflags '-l' -o $(BUILD_DIR)/minimal
 
 ## build the web binary
 web: bin/web

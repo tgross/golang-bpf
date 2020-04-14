@@ -1,0 +1,19 @@
+#!/usr/bin/env bpftrace
+
+BEGIN
+{
+	printf("Counting arguments to add... Hit Ctrl-C to end.\n");
+}
+
+uprobe:./bin/minimal:"main.add"
+{
+    @counts[arg0] = count();
+    @counts[arg1] = count();
+}
+
+END
+{
+	printf("\nTop 10 arguments by count:\n");
+	print(@counts, 10);
+	clear(@counts);
+}

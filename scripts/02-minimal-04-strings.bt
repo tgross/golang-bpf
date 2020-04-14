@@ -1,0 +1,11 @@
+#!/usr/bin/env bpftrace
+
+BEGIN
+{
+	printf("Waiting... Hit Ctrl-C to end.\n");
+}
+
+uprobe:./bin/minimal:"main.swap"
+{
+    printf("swapping \"%s\" and \"%s\"\n", str(sarg0, sarg1), str(sarg2, sarg3));
+}

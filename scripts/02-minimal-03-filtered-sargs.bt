@@ -1,0 +1,13 @@
+#!/usr/bin/env bpftrace
+
+BEGIN
+{
+	printf("Waiting... Hit Ctrl-C to end.\n");
+}
+
+uprobe:./bin/minimal:"main.add" /sarg0 > 10 || sarg1 > 10/
+{
+    // make sure you end printf with a newline or the last
+    // call won't flush!
+    printf("got an argument > 10 (sarg0: %d, sarg1: %d)\n", sarg0, sarg1);
+}

@@ -35,7 +35,11 @@ func swap(x, y string) (string, string) {
 }
 
 func main() {
-	fmt.Println(add(42, 13))
+
+	args := [][]int{{42, 13}, {1, 3}, {7, 11}}
+	for _, arg := range args {
+		fmt.Println(add(arg[0], arg[1]))
+	}
 
 	a, b := swap("hello", "world")
 	fmt.Println(a, b)
