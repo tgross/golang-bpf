@@ -26,6 +26,12 @@ bin/minimal: targets/minimal/*
 	mkdir -p ./bin
 	cd targets/minimal && go build -gcflags '-l' -o $(BUILD_DIR)/minimal
 
+## build the worker binary
+worker: bin/worker
+bin/worker: targets/worker/*
+	mkdir -p ./bin
+	cd targets/worker && go build -gcflags '-l' -o $(BUILD_DIR)/worker
+
 ## build the web binary
 web: bin/web
 bin/web: targets/web/*
