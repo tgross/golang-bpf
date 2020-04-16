@@ -1,0 +1,22 @@
+#!/usr/bin/env bpftrace
+
+BEGIN
+{
+	printf("Waiting... Hit Ctrl-C to end.\n");
+}
+
+uprobe:./bin/minimal:"main.swap"+40
+{
+    printf("getting the right address...\n");
+    printf("\treg(\"sp\"):                 %x  <- rsp address\n", reg("sp"));
+    printf("\treg(\"sp\")+0x28:            %x  <- rsp address + 28 \n", reg("sp")+0x28);
+    printf("\t*(reg(\"sp\")+0x28):         %x  <- dereferenced pointer\n", *(reg("sp")+0x28));
+    printf("\tstr(*(reg(\"sp\")+0x28), 5): %s  <- result\n", str(*(reg("sp")+0x28), 5));
+
+    printf("\n");
+    printf("getting the wrong address...\n");
+    printf("\treg(\"sp\"):                 %x  <- rsp address\n", reg("sp"));
+    printf("\t*reg(\"sp\"):                %x  <- dereferenced pointer \n", *reg("sp"));
+    printf("\t*reg(\"sp\")+0x28:           %x  <- dereferenced pointer + 28 \n", *reg("sp")+0x28);
+    printf("\tstr(*reg(\"sp\")+0x28)):     %s  <- total garbage!\n", str(*reg("sp")+0x28));
+}

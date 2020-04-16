@@ -1,0 +1,16 @@
+#!/usr/bin/env bpftrace
+
+BEGIN
+{
+	printf("Waiting... Hit Ctrl-C to end.\n");
+}
+
+uprobe:./bin/minimal:"main.add"
+{
+    printf("adding %d and %d\n", sarg0, sarg1);
+}
+
+uretprobe:./bin/minimal:"main.add"
+{
+    printf("returned %d\n", retval);
+}

@@ -320,9 +320,3 @@ swapping "hello" and "world"
 ```
 
 At this point there's a lot more to do in terms of reading structs, slices, etc. But let's move wrap up our minimal example by trying uretprobes in the next section.
-
-
-## References
-
-- [`bpftrace` issue #970](https://github.com/iovisor/bpftrace/issues/970): "Golang function latency"
-- [`funclatency.py`](https://github.com/iovisor/bcc/blob/master/tools/funclatency.py)
