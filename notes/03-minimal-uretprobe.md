@@ -73,7 +73,7 @@ Dump of assembler code for function main.swap:
 End of assembler dump.
 ```
 
-I'm doing this in `gdb` because I want to explore a bit and because it lets me use Intel syntax, but you can also dump the assembly with `objdump`.
+I'm doing this in `gdb` because I want to explore a bit, but you can also dump the assembly with `objdump`.
 
 <details><summary>objdump example</summary>
 
