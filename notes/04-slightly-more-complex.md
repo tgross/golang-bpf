@@ -1,6 +1,7 @@
 # Experiment 04: A Slightly More Complex Example
 
-The source for `./target/worker` runs work across multiple goroutines, has some state, and passes around structs and slices. Let's run it:
+The source for `./target/worker` runs work across multiple goroutines,
+has some state, and passes around structs and slices. Let's run it:
 
 ```
 $ make clean worker && ./bin/worker
@@ -11,7 +12,8 @@ cd targets/worker && go build -o /opt/gopath/src/golang-bpf/bin/worker
 $
 ```
 
-Let's practice getting the arguments via uprobes on the worker's `work` method. First, we need the symbol:
+Let's practice getting the arguments via uprobes on the worker's
+`work` method. First, we need the symbol:
 
 ```
 $ objdump -t ./bin/worker | grep work
@@ -23,7 +25,9 @@ $ objdump -t ./bin/worker | grep work
 00000000004919e0 g     F .text  0000000000000199 main.(*Worker).work
 ```
 
-Then we need to remember that the actual 1st arg for a method will be a pointer to the struct, so to get the 2nd param we want the _3rd_ argument, or `sarg2`:
+Then we need to remember that the actual 1st arg for a method will be
+a pointer to the struct, so to get the 2nd param we want the _3rd_
+argument, or `sarg2`:
 
 ```
 $ sudo bpftrace -e 'uprobe:./bin/worker:"main.(*Worker).work"
@@ -42,7 +46,8 @@ times: 8
 ```
 
 
-Next let's try to get the results of the `Inc` method. First, we need the symbol:
+Next let's try to get the results of the `Inc` method. First, we need
+the symbol:
 
 ```
 $ objdump -t ./bin/worker | grep Inc
@@ -61,7 +66,10 @@ Attaching 2 probes...
 @count: 43
 ```
 
-And now let's try to get the results. First we'll disassemble the function; the `-Mintel` flag here displays the assembly in my preferred syntax, and the `-S` flag interleaves the source lines which is nice for navigating the listing.
+And now let's try to get the results. First we'll disassemble the
+function; the `-Mintel` flag here displays the assembly in my
+preferred syntax, and the `-S` flag interleaves the source lines which
+is nice for navigating the listing.
 
 ```
 $ objdump --disassemble="main.(*State).Inc" -Mintel -S ./bin/worker
@@ -125,7 +133,12 @@ func (s *State) Inc() int {
   49194f:       e9 4c ff ff ff          jmp    4918a0 <main.(*State).Inc>
 ```
 
-There's actually _two_ paths through this code because of the lock, but the return value location is the same either way. At address `491916`, we see the result of the increment instruction being moved out of `rcx` and into `rax`. That's at relative position `main.(*State).Inc+0x76`. (You can use Python as a quickie hex calculator `python3 -c "print(hex(0x491916 - 0x4918a0))"`)
+There's actually _two_ paths through this code because of the lock,
+but the return value location is the same either way. At address
+`491916`, we see the result of the increment instruction being moved
+out of `rcx` and into `rax`. That's at relative position
+`main.(*State).Inc+0x76`. (You can use Python as a quickie hex
+calculator `python3 -c "print(hex(0x491916 - 0x4918a0))"`)
 
 ```
 $ sudo bpftrace -e 'uprobe:./bin/worker:"main.(*State).Inc"+0x76 { printf("%d\n", *reg("ax")) }'
@@ -144,7 +157,11 @@ Attaching 1 probe...
 ^C
 ```
 
-Let's look at a more complex return structure. The `results` method on `Worker` returns a slice of pointers to structs. Note that if we didn't have the `-l` flag, this very simple method would be inlined again, which would make it harder to get the results. We'll try this again with inlining later.
+Let's look at a more complex return structure. The `results` method on
+`Worker` returns a slice of pointers to structs. Note that if we
+didn't have the `-l` flag, this very simple method would be inlined
+again, which would make it harder to get the results. We'll try this
+again with inlining later.
 
 ```
 $ objdump --disassemble="main.(*Worker).results" -Mintel -S ./bin/worker
@@ -171,9 +188,15 @@ func (w *Worker) results() []*count {
   491ba0:       c3                      ret
 ```
 
-We expect the results to come back on the stack, so we can hook our probe at the `ret` instruction at `491ba0` (or `main.(*Worker).results+0x20`) and then walk the stack from there, just as we did in the minimal example application.
+We expect the results to come back on the stack, so we can hook our
+probe at the `ret` instruction at `491ba0` (or
+`main.(*Worker).results+0x20`) and then walk the stack from there,
+just as we did in the minimal example application.
 
-We know that golang slices are a pointer to the 1st element of the backing array, an integer length, and an integer capacity. If we run this through `gdb`, put a breakpoint at the start of `results`, hit `continue` a few times, we can inspect what this looks like:
+We know that golang slices are a pointer to the 1st element of the
+backing array, an integer length, and an integer capacity. If we run
+this through `gdb`, put a breakpoint at the start of `results`, hit
+`continue` a few times, we can inspect what this looks like:
 
 ```
 (gdb) x $rsp+0x20
@@ -186,9 +209,12 @@ We know that golang slices are a pointer to the 1st element of the backing array
 0xc000090ee0:   0xc00009c1a0  # <-- pointer
 ```
 
-That pointer `0xc00009c1a0` should point to an array of pointers, each of which points to one of our `count` structs. Let's see if we can unpack that with bpftrace.
+That pointer `0xc00009c1a0` should point to an array of pointers, each
+of which points to one of our `count` structs. Let's see if we can
+unpack that with bpftrace.
 
-Now before we go pointer chasing, it's a good idea to make sure we're at least hooking the right thing:
+Now before we go pointer chasing, it's a good idea to make sure we're
+at least hooking the right thing:
 
 ```
 $ sudo bpftrace -e 'uprobe:./bin/worker:"main.(*Worker).results"+0x20
@@ -208,7 +234,9 @@ len: 8, cap: 8
 len: 9, cap: 16
 ```
 
-This is kinda cool, because you can see how the runtime is expanding the capacity of the slice by powers of 2 as the length increases. Let's see if we can run through the structs.
+This is kinda cool, because you can see how the runtime is expanding
+the capacity of the slice by powers of 2 as the length
+increases. Let's see if we can run through the structs.
 
 
 **TODO**
@@ -216,4 +244,5 @@ This is kinda cool, because you can see how the runtime is expanding the capacit
 
 ## References
 
-- [Go Slices: usage and internals](https://blog.golang.org/slices-intro)
+- [Go Slices: usage and
+  internals](https://blog.golang.org/slices-intro)

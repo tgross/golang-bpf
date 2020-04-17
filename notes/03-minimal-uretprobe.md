@@ -48,11 +48,30 @@ returned ""
 ^C
 ```
 
-Well what could we really have expected there?  We can only return 1 value, which in AMD64 will be in `rax` if it's an integer, or on the stack if it's a "large value" like a struct. It's probably a safe bet that golang treats multiple returns this way, too.
+Well what could we really have expected there?  We can only return 1
+value, which in AMD64 will be in `rax` if it's an integer, or on the
+stack if it's a "large value" like a struct. It's probably a safe bet
+that golang treats multiple returns this way, too.
 
-On top of that, there's are several known issues ([bpftrace #970](https://github.com/iovisor/bpftrace/issues/970) [bcc #1320](https://github.com/iovisor/bcc/issues/1320)) with golang and uretprobes. This boils down to golang's concurrency model. Instead of using a thread for every goroutine, golang multiplexes goroutines across multiple threads ("M:N scheduling"). So instead of each thread having a default 2MB stack, each goroutine has a tiny 2KB stack that's managed by the golang runtime instead of the operating system. When the program needs to grow the stack for a goroutine and there's not enough room, the runtime copies the entire goroutine's stack to another place in memory where it has enough room to expand. But that means that the return locations are no longer valid, and so a uretprobe that fires may be reading into memory that's been reused for something else!
+On top of that, there's are several known issues ([bpftrace
+#970](https://github.com/iovisor/bpftrace/issues/970) [bcc
+#1320](https://github.com/iovisor/bcc/issues/1320)) with golang and
+uretprobes. This boils down to golang's concurrency model. Instead of
+using a thread for every goroutine, golang multiplexes goroutines
+across multiple threads ("M:N scheduling"). So instead of each thread
+having a default 2MB stack, each goroutine has a tiny 2KB stack that's
+managed by the golang runtime instead of the operating system. When
+the program needs to grow the stack for a goroutine and there's not
+enough room, the runtime copies the entire goroutine's stack to
+another place in memory where it has enough room to expand. But that
+means that the return locations are no longer valid, and so a
+uretprobe that fires may be reading into memory that's been reused for
+something else!
 
-The advice from BPF developer folks have been to trace the function from the uprobe, but with offsets onto each return. I haven't actually seen how to do that written down anywhere, so I wanted to explore that here.
+The advice from BPF developer folks have been to trace the function
+from the uprobe, but with offsets onto each return. I haven't actually
+seen how to do that written down anywhere, so I wanted to explore that
+here.
 
 Let's disassemble `main.swap`:
 
@@ -73,7 +92,8 @@ Dump of assembler code for function main.swap:
 End of assembler dump.
 ```
 
-I'm doing this in `gdb` because I want to explore a bit, but you can also dump the assembly with `objdump`.
+I'm doing this in `gdb` because I want to explore a bit, but you can
+also dump the assembly with `objdump`.
 
 <details><summary>objdump example</summary>
 
@@ -105,7 +125,8 @@ func swap(x, y string) (string, string) {
 
 </details>
 
-We're interested in what's happening when we get to the end of the function, so let's single-step through until we get to the `ret`:
+We're interested in what's happening when we get to the end of the
+function, so let's single-step through until we get to the `ret`:
 
 ```
 # we hit "si" to single-step through each instruction until we get to the return...
@@ -129,14 +150,21 @@ We're interested in what's happening when we get to the end of the function, so 
    0x0000000000494eaf:  cc      int3
 ```
 
-At this point, we can see we've moved our outputs into pointers offset from the stack pointer, that point to our strings. These are on the stack so it's last-in-first-out, which is admittedly a little extra confusing here because the function's purpose is to swap the strings. The last instruction at `main.swap+35` was to move `rax` into `rsp+0x40`, which is our integer of the length:
+At this point, we can see we've moved our outputs into pointers offset
+from the stack pointer, that point to our strings. These are on the
+stack so it's last-in-first-out, which is admittedly a little extra
+confusing here because the function's purpose is to swap the
+strings. The last instruction at `main.swap+35` was to move `rax` into
+`rsp+0x40`, which is our integer of the length:
 
 ```
 (gdb) x/d $rsp+0x40
 0xc000090ea0:   5
 ```
 
-And the previous instruction moving stuff out of `rax` (at `main.swap+25`) was into `rsp+0x38`. That'll be a pointer to the start of our string:
+And the previous instruction moving stuff out of `rax` (at
+`main.swap+25`) was into `rsp+0x38`. That'll be a pointer to the start
+of our string:
 
 ```
 (gdb) x/a $rsp+0x38
@@ -145,7 +173,10 @@ And the previous instruction moving stuff out of `rax` (at `main.swap+25`) was i
 0x4c4319:       "helloint16int32int64panicscav sleepslicesse41sse42ssse3uint8worldwrite Value addr= base  code= ctxt: curg= goid  jobs= list= m->p= next= p->m= prev= span= varp=% util(...)\n, i = , not 390625<-chanArab"...
 ```
 
-So when we write our fake uretprobe, we'll need to follow these pointers. If you're like me and basically never have to do pointer arithmitic in your day job, this can be a little tricky. Here's the working version:
+So when we write our fake uretprobe, we'll need to follow these
+pointers. If you're like me and basically never have to do pointer
+arithmitic in your day job, this can be a little tricky. Here's the
+working version:
 
 ```
 uprobe:./bin/minimal:"main.swap"+40
@@ -165,7 +196,9 @@ swapping "hello" and "world"
 results: "world" and "hello"
 ```
 
-Note that we're adding to the `rsp` address (which walks up the stack) and then dereferencing the pointer we find at that address. We don't want to dereference the `rsp` and then walk up from there.
+Note that we're adding to the `rsp` address (which walks up the stack)
+and then dereferencing the pointer we find at that address. We don't
+want to dereference the `rsp` and then walk up from there.
 
 The `03-minimal-03-pointer-chasing.bt` script shows an example of how not to do it:
 
@@ -187,14 +220,18 @@ getting the wrong address...
 ^C
 ```
 
-In the next section, we'll dig into working with objects more complex than strings.
+In the next section, we'll dig into working with objects more complex
+than strings.
 
 
 ### References
 
-- [Intel Introduction to x64 Assembly](https://software.intel.com/sites/default/files/m/d/4/1/d/8/Introduction_to_x64_Assembly.pdf)
+- [Intel Introduction to x64
+  Assembly](https://software.intel.com/sites/default/files/m/d/4/1/d/8/Introduction_to_x64_Assembly.pdf)
 - [Assembly on Ubuntu](http://www.egr.unlv.edu/~ed/assembly64.pdf)
 - [System_V_AMD64_ABI](https://en.wikipedia.org/wiki/X86_calling_conventions#System_V_AMD64_ABI)
-- [bpftrace: golang function latency](https://github.com/iovisor/bpftrace/issues/970)
-- [bcc-tools: Go crash with uretprobe](https://github.com/iovisor/bcc/issues/1320)
+- [bpftrace: golang function
+  latency](https://github.com/iovisor/bpftrace/issues/970)
+- [bcc-tools: Go crash with
+  uretprobe](https://github.com/iovisor/bcc/issues/1320)
 - [`funclatency.py`](https://github.com/iovisor/bcc/blob/master/tools/funclatency.py)

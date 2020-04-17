@@ -23,7 +23,8 @@ $ objdump -t ./bin/minimal | grep 'main\.add'
 $ objdump -t ./bin/minimal | grep 'main\.swap'
 ```
 
-Oops they're inlined. Let's tweak that in our makefile by adding `-gcflags '-l'`:
+Oops they're inlined. Let's tweak that in our makefile by adding
+`-gcflags '-l'`:
 
 ```
 $ objdump -t ./bin/minimal | grep 'main\.read'
@@ -35,7 +36,8 @@ $ objdump -t ./bin/minimal | grep 'main\.swap'
 0000000000494e80 g     F .text  0000000000000029 main.swap
 ```
 
-Let's try out our last exercise's oneliner again, running `./bin/minimal` a handful of times in another terminal window:
+Let's try out our last exercise's oneliner again, running
+`./bin/minimal` a handful of times in another terminal window:
 
 ```
 $ sudo bpftrace -e 'uprobe:./bin/minimal:"main.read" { @counts[probe] = count() } END { printf("\n")
@@ -45,7 +47,9 @@ Attaching 2 probes...
 @counts[uprobe:./bin/minimal:main.read]: 5
 ```
 
-Ok, now let's dig into using uprobes for the arguments. Our trace scripts are going to quickly get long enough where one-liners aren't practical, so we'll write these in their own `.bt` script files.
+Ok, now let's dig into using uprobes for the arguments. Our trace
+scripts are going to quickly get long enough where one-liners aren't
+practical, so we'll write these in their own `.bt` script files.
 
 Here's the probe for our first attempt:
 
@@ -72,7 +76,9 @@ Top 10 arguments by count:
 @counts[824633778200]: 2
 ```
 
-What the heck is this?! We can see the first argument fine but the 2nd argument seems to be gone and replaced with... is that a pointer? Let's dump the registers to see what's going on:
+What the heck is this?! We can see the first argument fine but the 2nd
+argument seems to be gone and replaced with... is that a pointer?
+Let's dump the registers to see what's going on:
 
 ```
 $ gdb ./bin/minimal
@@ -115,7 +121,12 @@ fs             0x0                 0
 gs             0x0                 0
 ```
 
-Oh right... in AMD64, we'd expect to see arg0 in the `rdi` register and arg1 in the `rsi` register, but golang doesn't respect the AMD64 calling convention because it's golang and they have to be unique. In golang arguments are passed on the stack, so let's inspect the stack. (We're e`x`amining `3` `g`iant words (64-bit words) as `d`ecimal numbers.)
+Oh right... in AMD64, we'd expect to see arg0 in the `rdi` register
+and arg1 in the `rsi` register, but golang doesn't respect the AMD64
+calling convention because it's golang and they have to be unique. In
+golang arguments are passed on the stack, so let's inspect the
+stack. (We're e`x`amining `3` `g`iant words (64-bit words) as
+`d`ecimal numbers.)
 
 ```
 (gdb) x/3dg $rsp
@@ -123,7 +134,11 @@ Oh right... in AMD64, we'd expect to see arg0 in the `rdi` register and arg1 in 
 0xc000090e70:   13
 ```
 
-Fortunately for us, the bpftrace folks already have a [`sarg0, sarg1,... sargN` builtin](https://github.com/iovisor/bpftrace/blob/master/docs/reference_guide.md#1-builtins) specifically to deal with languages that pass arguments on the stack. Which I suspect is literally only golang. Of course.
+Fortunately for us, the bpftrace folks already have a [`sarg0,
+sarg1,... sargN`
+builtin](https://github.com/iovisor/bpftrace/blob/master/docs/reference_guide.md#1-builtins)
+specifically to deal with languages that pass arguments on the
+stack. Which I suspect is literally only golang. Of course.
 
 ```
 uprobe:./bin/minimal:"main.add"
@@ -133,7 +148,8 @@ uprobe:./bin/minimal:"main.add"
 }
 ```
 
-Unfortunately for us, the version of bpftrace that ships for our test box doesn't have that option yet:
+Unfortunately for us, the version of bpftrace that ships for our test
+box doesn't have that option yet:
 
 ```
 $ sudo ./scripts/02-minimal-02-sargs.bt
@@ -141,7 +157,11 @@ Unknown identifier: 'sarg0'
 Unknown identifier: 'sarg1'
 ```
 
-This was added in [0.9.3](https://github.com/iovisor/bpftrace/releases/tag/v0.9.3). So we're going to do something incredibly gross, and [copy the bpftrace binary](https://github.com/iovisor/bpftrace/blob/master/INSTALL.md#copying-bpftrace-binary-from-docker) out of the most recent Docker image published by upstream.
+This was added in
+[0.9.3](https://github.com/iovisor/bpftrace/releases/tag/v0.9.3). So
+we're going to do something incredibly gross, and [copy the bpftrace
+binary](https://github.com/iovisor/bpftrace/blob/master/INSTALL.md#copying-bpftrace-binary-from-docker)
+out of the most recent Docker image published by upstream.
 
 ```
 $ bpftrace -V
@@ -153,7 +173,12 @@ Counting arguments to add... Hit Ctrl-C to end.
 ^CCould not resolve symbol: /proc/self/exe:END_trigger
 ```
 
-Hrm, looks like there's a bug (maybe related to [#954](https://github.com/iovisor/bpftrace/issues/954)?) and 0.10.0 was released only 2 days ago (as of this writing), so let's try to grab the last of the 0.9.4? We can build this ourselves, but let's be lazy and look at https://quay.io/repository/iovisor/bpftrace?tab=tags first.
+Hrm, looks like there's a bug (maybe related to
+[#954](https://github.com/iovisor/bpftrace/issues/954)?) and 0.10.0
+was released only 2 days ago (as of this writing), so let's try to
+grab the last of the 0.9.4? We can build this ourselves, but let's be
+lazy and look at https://quay.io/repository/iovisor/bpftrace?tab=tags
+first.
 
 ```
 $ docker run -v $(pwd)/output:/output quay.io/iovisor/bpftrace:v0.9.4 /bin/bash -c "cp /usr/bin/bpftr
@@ -185,9 +210,12 @@ Top 10 arguments by count:
 @counts[13]: 1
 ```
 
-Success! From this point on we'll use our "dirty" 0.9.4 version as the installed version and see how that goes for us. The wonders of living on the bleeding edge.
+Success! From this point on we'll use our "dirty" 0.9.4 version as the
+installed version and see how that goes for us. The wonders of living
+on the bleeding edge.
 
-Ok, so now let's exercise filters. Here we're filtering for whenever one of the arguments is over 10.
+Ok, so now let's exercise filters. Here we're filtering for whenever
+one of the arguments is over 10.
 
 ```
 uprobe:./bin/minimal:"main.add" /sarg0 > 10 || sarg1 > 10/
@@ -223,7 +251,9 @@ Waiting... Hit Ctrl-C to end.
 swapping "helloint16int32int64panicscav sleepslicesse41sse42ssse3uint8wor" and ""
 ```
 
-Oh dear, that's not right... golang doesn't pass null-terminated char arrays around like C, but probably annotates them with the length. Let's look at this in gdb again:
+Oh dear, that's not right... golang doesn't pass null-terminated char
+arrays around like C, but probably annotates them with the
+length. Let's look at this in gdb again:
 
 ```
 # note some relevant config options:
@@ -265,7 +295,8 @@ Let's look at those arguments:
 0x4c4355:       "worldwrite Value addr= base  code= ctxt: curg= goid  jobs= list= m->p= next= p->m= prev= span= varp=% util(...)\n, i = , not 390625<-chanArabicBrahmiCarianChakmaCommonCopticFormatGOROOTGothicHangulHatr"...
 ```
 
-Ok, so they're not null-terminated, just as we thought. Let's look at the disassembly:
+Ok, so they're not null-terminated, just as we thought. Let's look at
+the disassembly:
 
 ```
 (gdb) disas
@@ -282,7 +313,9 @@ Dump of assembler code for function main.swap:
 End of assembler dump.
 ```
 
-Note I'm not an assembly guru! But it looks to me like we're moving 4 arguments around. The 1st and 3rd are pointers to the start of the string arguments:
+Note I'm not an assembly guru! But it looks to me like we're moving 4
+arguments around. The 1st and 3rd are pointers to the start of the
+string arguments:
 
 ```
 (gdb) x/a $rsp+0x18
@@ -300,7 +333,8 @@ Whereas the 2nd and 4th are integers:
 0xc000098e70:   5
 ```
 
-Hey, do those look like the length of the string argument to you? Let's update our script:
+Hey, do those look like the length of the string argument to you?
+Let's update our script:
 
 ```
 uprobe:./bin/minimal:"main.swap"
@@ -319,4 +353,6 @@ swapping "hello" and "world"
 ^C
 ```
 
-At this point there's a lot more to do in terms of reading structs, slices, etc. But let's move wrap up our minimal example by trying uretprobes in the next section.
+At this point there's a lot more to do in terms of reading structs,
+slices, etc. But let's move wrap up our minimal example by trying
+uretprobes in the next section.
