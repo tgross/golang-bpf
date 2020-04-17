@@ -3,6 +3,7 @@
 # tweak profile
 echo 'alias ll="ls -lahF"' >> ~/.profile
 echo 'export PS1="\$ "' >> ~/.profile
+echo 'PATH=$PATH:/opt/gopath/src/golang-bpf/bin' >> ~/.profile
 
 echo <<EOF > ~/.gdbinit
 set disassembly-flavor intel
