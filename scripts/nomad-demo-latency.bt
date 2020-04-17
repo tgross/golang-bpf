@@ -1,0 +1,275 @@
+#!/usr/bin/env bpftrace
+/*
+Get Nomad FSM.Apply latency
+TODO: using sarg with offsets isn't really concurrency safe and emits a warning
+*/
+
+BEGIN
+{
+	printf("Hit Ctrl-C to end.\n");
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"
+{
+    @start[str(*sarg1)] = nsecs;
+}
+
+/* these address offsets were generated via:
+
+base=$(objdump --disassemble="github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply" \
+               -Mintel -S ./bin/nomad \
+               | awk '/hashicorp/{print $1}' \
+               | head -1)
+
+objdump --disassemble="github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply" \
+        -Mintel -S ./bin/nomad \
+        | awk -F' |:' '/ret/{print $2}' \
+        | xargs -I % \
+        python3 -c "print('uprobe:./bin/nomad:\"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply\"+' + hex(0x% - 0x$base))"
+*/
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x1bb
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x23b
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x2c4
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x344
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x3d6
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x456
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x4e8
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x568
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x5e8
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x683
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x703
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x795
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x815
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x895
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x927
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x9a7
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0xa39
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0xab9
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0xb39
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0xbdd
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0xc5d
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0xcef
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0xd6f
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0xdef
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0xe81
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0xf01
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0xf93
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x1013
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x1093
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x112e
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x11ae
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x1240
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x12c0
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x1340
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x13d2
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x1452
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x1582
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x169a
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x171a
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x179a
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}
+
+uprobe:./bin/nomad:"github.com/hashicorp/nomad/nomad.(*nomadFSM).Apply"+0x181a
+{
+    @usecs = hist((nsecs - @start[str(*sarg1)]) / 1000);
+    delete(@start[str(*sarg1)]);
+}

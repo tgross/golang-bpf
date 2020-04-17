@@ -1,0 +1,17 @@
+#!/usr/bin/env bpftrace
+
+BEGIN
+{
+	printf("Printing top 10 Nomad syscalls every 3s... Hit Ctrl-C to end.\n");
+}
+
+tracepoint:syscalls:sys_enter_*  / comm == "nomad" /
+{
+    @counts[probe] = count();
+}
+
+interval:s:3
+{
+    print(@counts, 10);
+    clear(@counts);
+}
