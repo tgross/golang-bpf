@@ -7,7 +7,7 @@ LINUX_BASE_BOX = "bento/ubuntu-19.10"
 LINUX_IP_ADDRESS = "10.199.0.200"
 
 Vagrant.configure(2) do |config|
-  config.vm.define "disco", autostart: true, primary: true do |vmCfg|
+  config.vm.define "eoan", autostart: true, primary: true do |vmCfg|
 	vmCfg.vm.box = LINUX_BASE_BOX
 	vmCfg.vm.hostname = "linux"
 
